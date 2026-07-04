@@ -127,6 +127,8 @@
           <tr class="bg-surface-container-lowest border-b border-outline-variant">
             <th class="p-4 font-bold text-on-surface-variant uppercase text-xs tracking-wider">Counter</th>
             <th class="p-4 font-bold text-on-surface-variant uppercase text-xs tracking-wider">Currently Serving</th>
+            <th class="p-4 font-bold text-on-surface-variant uppercase text-xs tracking-wider">Customer Name</th>
+            <th class="p-4 font-bold text-on-surface-variant uppercase text-xs tracking-wider">Category</th>
             <th class="p-4 font-bold text-on-surface-variant uppercase text-xs tracking-wider text-center">Tokens Handled</th>
             <th class="p-4 font-bold text-on-surface-variant uppercase text-xs tracking-wider text-right">Status</th>
           </tr>
@@ -201,6 +203,8 @@
       <tr class="hover:bg-surface-container-low transition-colors">
         <td class="p-4 font-bold">Counter ${String(c.counter).padStart(2,'0')}</td>
         <td class="p-4">${c.token_id ? `<span class="font-bold text-primary">${c.token_id}</span>` : '<span class="text-outline">--</span>'}</td>
+        <td class="p-4">${c.customer_name ? c.customer_name : '<span class="text-outline">--</span>'}</td>
+        <td class="p-4">${c.category ? `<span class="${catColors[c.category] || catColors.General} text-white px-2 py-1 rounded-full text-xs font-bold uppercase">${c.category}</span>` : '<span class="text-outline">--</span>'}</td>
         <td class="p-4 text-center font-bold">${c.tokens_handled}</td>
         <td class="p-4 text-right">
           <span class="${c.status === 'Busy' ? 'bg-tertiary-fixed text-tertiary' : 'bg-surface-container-high text-on-surface-variant'} px-3 py-1 rounded-full text-xs font-bold uppercase">${c.status}</span>

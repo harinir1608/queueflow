@@ -165,11 +165,15 @@ class TokenQueue:
 
         counter_details = []
         for i in range(NUM_COUNTERS):
+            token_id = self.counters[i]
+            info = self.token_status.get(token_id) if token_id else None
             counter_details.append({
                 "counter": i + 1,
-                "token_id": self.counters[i],
+                "token_id": token_id,
+                "customer_name": info["name"] if info else None,
+                "category": info["category"] if info else None,
                 "tokens_handled": self.counter_loads[i],
-                "status": "Busy" if self.counters[i] else "Idle",
+                "status": "Busy" if token_id else "Idle",
             })
 
         return {
