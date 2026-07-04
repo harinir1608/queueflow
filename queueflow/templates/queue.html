@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QueueFlow - Live Queue</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #c3c6d6; border-radius: 10px; }
+        .priority-pulse { animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#ffffff", "surface-bright": "#f9f9ff",
+                        "on-tertiary-fixed-variant": "#0e5138", "on-surface-variant": "#434654",
+                        "on-tertiary-container": "#a2e1bf", "primary": "#003d9b",
+                        "surface-variant": "#d7e2ff", "background": "#f9f9ff",
+                        "surface-container-highest": "#d7e2ff", "secondary-container": "#db313f",
+                        "surface-container-lowest": "#ffffff", "on-error": "#ffffff",
+                        "surface-container": "#e8edff", "surface-container-high": "#e0e8ff",
+                        "primary-container": "#0052cc", "inverse-primary": "#b2c5ff",
+                        "error-container": "#ffdad6", "surface-container-low": "#f1f3ff",
+                        "primary-fixed-dim": "#b2c5ff", "primary-fixed": "#dae2ff",
+                        "tertiary": "#084e35", "tertiary-fixed-dim": "#95d4b3",
+                        "on-secondary-fixed-variant": "#92001c", "inverse-surface": "#1d3052",
+                        "error": "#ba1a1a", "on-primary-fixed": "#001848",
+                        "secondary-fixed-dim": "#ffb3b1", "on-background": "#041b3c",
+                        "outline": "#737685", "outline-variant": "#c3c6d6",
+                        "on-primary-fixed-variant": "#0040a2", "secondary": "#b7102a",
+                        "tertiary-container": "#29664b", "surface": "#f9f9ff",
+                        "on-primary-container": "#c4d2ff", "surface-tint": "#0c56d0",
+                        "on-surface": "#041b3c", "on-error-container": "#93000a",
+                        "on-secondary-container": "#fffbff", "inverse-on-surface": "#edf0ff",
+                        "tertiary-fixed": "#b1f0ce", "on-secondary-fixed": "#410007",
+                        "surface-dim": "#cadaff", "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff", "secondary-fixed": "#ffdad8",
+                        "on-tertiary-fixed": "#002114"
+                    },
+                    "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                    "spacing": {
+                        "unit": "8px", "stack-md": "16px", "container-padding-mobile": "20px",
+                        "container-padding-desktop": "40px", "gutter": "24px", "stack-sm": "8px",
+                        "stack-lg": "32px", "section-gap": "64px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"], "headline-md": ["Inter"], "headline-lg": ["Inter"],
+                        "body-md": ["Inter"], "headline-lg-mobile": ["Inter"], "display-lg": ["Inter"],
+                        "label-bold": ["Inter"], "display-md": ["Inter"], "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display-lg": ["120px", {"lineHeight": "120px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-bold": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "display-md": ["72px", {"lineHeight": "80px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style> body { min-height: max(884px, 100dvh); } </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md min-h-screen pb-24">
+<header class="w-full top-0 sticky z-40 bg-surface border-b border-outline-variant flex items-center justify-between px-container-padding-mobile md:px-container-padding-desktop h-16">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" style="font-size: 28px;">confirmation_number</span>
+<h1 class="font-headline-md text-headline-md-mobile md:text-headline-md text-primary tracking-tight">QueueFlow</h1>
+</div>
+<div class="flex items-center gap-4">
+<nav class="hidden md:flex items-center gap-stack-md mr-4">
+<a class="text-on-surface-variant font-label-bold text-label-bold px-3 py-2 hover:bg-surface-container-low transition-colors rounded-lg" href="/">Get Token</a>
+<a class="text-primary font-bold font-label-bold text-label-bold px-3 py-2 rounded-lg" href="/queue">Queue</a>
+{% if is_staff %}
+<a class="text-on-surface-variant font-label-bold text-label-bold px-3 py-2 hover:bg-surface-container-low transition-colors rounded-lg" href="/staff/logout">Logout</a>
+{% else %}
+<a class="text-on-surface-variant font-label-bold text-label-bold px-3 py-2 hover:bg-surface-container-low transition-colors rounded-lg" href="/staff">Staff Login</a>
+{% endif %}
+</nav>
+<div class="hidden md:flex items-center gap-2 text-on-surface-variant font-label-bold">
+<span class="material-symbols-outlined text-outline">schedule</span>
+<span id="waiting-count-header">Waiting: 0</span>
+</div>
+</div>
+</header>
+<main class="max-w-[1440px] mx-auto px-container-padding-mobile md:px-container-padding-desktop pt-8">
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+<div>
+<h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background">{{ 'Admin Control Panel' if is_staff else 'Live Queue' }}</h2>
+<p class="text-on-surface-variant font-body-md">{{ 'Serve tokens and manage counters' if is_staff else 'Real-time update of all active service tokens' }}</p>
+</div>
+<div class="flex items-center gap-2 px-4 py-2 bg-tertiary-fixed text-on-tertiary-fixed rounded-lg">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<span class="font-label-bold" id="connection-status">Connecting...</span>
+</div>
+</div>
+
+<section class="mb-12">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-label-bold text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">campaign</span>
+                    NOW SERVING
+                </h3>
+{% if is_staff %}
+<button id="serve-next-btn" class="bg-primary text-on-primary px-4 py-2 rounded-lg font-label-bold hover:brightness-110 active:scale-95 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span> Serve Next
+</button>
+{% endif %}
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="counters-grid">
+</div>
+</section>
+
+<section class="section-gap">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-label-bold text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">format_list_numbered</span>
+                    WAITING LIST (<span id="waiting-total">0</span>)
+                </h3>
+<div class="flex gap-2">
+<button id="filter-btn" class="bg-surface-container text-on-surface-variant px-3 py-1.5 rounded-full font-label-sm flex items-center gap-1 hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[16px]">filter_list</span>
+                        Filter
+                    </button>
+<button id="sort-btn" class="bg-surface-container text-on-surface-variant px-3 py-1.5 rounded-full font-label-sm flex items-center gap-1 hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[16px]">sort</span>
+                        Sort
+                    </button>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
+<div class="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-surface-container-low border-b border-outline-variant font-label-bold text-outline uppercase tracking-wider">
+<div class="col-span-2">Token #</div>
+<div class="col-span-4">Customer Name</div>
+<div class="col-span-3">Category</div>
+<div class="col-span-3 text-right">Time Waiting</div>
+</div>
+<div class="max-h-[600px] overflow-y-auto" id="waiting-list">
+</div>
+</div>
+</section>
+</main>
+
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 bg-surface border-t border-outline-variant px-4 pb-2 shadow-md">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:scale-95" href="/">
+<span class="material-symbols-outlined mb-1">add_circle</span>
+<span class="font-label-sm text-label-sm">Get Token</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 scale-110 transition-transform duration-200" href="/queue">
+<span class="material-symbols-outlined mb-0.5" style="font-variation-settings: 'FILL' 1;">format_list_numbered</span>
+<span class="font-label-sm text-label-sm font-bold">Queue</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:scale-95" href="{{ '/staff/logout' if is_staff else '/staff' }}">
+<span class="material-symbols-outlined mb-1">group</span>
+<span class="font-label-sm text-label-sm">{{ 'Logout' if is_staff else 'Staff' }}</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:scale-95" href="/staff">
+<span class="material-symbols-outlined mb-1">analytics</span>
+<span class="font-label-sm text-label-sm">Admin</span>
+</a>
+</nav>
+
+<script>
+  const socket = io();
+  const IS_STAFF = {{ 'true' if is_staff else 'false' }};
+
+  const categoryStyles = {
+    Emergency: { row: 'bg-secondary-container/5 priority-pulse', badge: 'bg-secondary text-on-secondary', textColor: 'text-secondary' },
+    Senior:    { row: 'bg-error-container/20', badge: 'bg-on-secondary-fixed-variant text-white', textColor: 'text-on-secondary-fixed-variant' },
+    General:   { row: '', badge: 'bg-primary text-on-primary', textColor: 'text-primary' },
+  };
+
+  function formatWait(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+  }
+
+  let lastState = null;
+  let sortByWaitDesc = true;
+  let filterPriorityOnly = false;
+
+  function applyFilterSort(waiting) {
+    let list = [...waiting];
+    if (filterPriorityOnly) {
+      list = list.filter(t => t.category !== 'General');
+    }
+    if (sortByWaitDesc) {
+      list.sort((a, b) => b.wait_seconds - a.wait_seconds);
+    } else {
+      list.sort((a, b) => a.wait_seconds - b.wait_seconds);
+    }
+    // Priority (Emergency/Senior) always bubbles above General regardless of sort direction
+    list.sort((a, b) => (a.category === 'General') - (b.category === 'General'));
+    return list;
+  }
+
+  function renderState(state) {
+    lastState = state;
+    document.getElementById('connection-status').textContent = 'System Online';
+    document.getElementById('waiting-count-header').textContent = 'Waiting: ' + state.waiting_count;
+
+    const grid = document.getElementById('counters-grid');
+    grid.innerHTML = state.counters.map(c => `
+      <div class="bg-surface-container-lowest border border-outline-variant p-4 rounded-xl shadow-md flex flex-col items-center justify-center transition-transform hover:scale-105 border-l-4 ${c.token_id ? 'border-l-tertiary' : 'border-l-outline-variant'}">
+        <span class="font-label-sm text-outline mb-1">COUNTER ${c.counter}</span>
+        <span class="font-display-md text-headline-lg ${c.token_id ? 'text-tertiary' : 'text-outline'} leading-none">${c.token_id ?? '--'}</span>
+        ${c.token_id && c.info ? `<span class="text-[11px] text-on-surface-variant mt-1">${c.info.name}</span>` : ''}
+        ${(c.token_id && IS_STAFF) ? `<button onclick="completeCounter(${c.counter})" class="mt-2 text-[11px] font-label-bold text-primary underline">Mark Served</button>` : ''}
+      </div>
+    `).join('');
+
+    document.getElementById('waiting-total').textContent = state.waiting_count;
+    const list = document.getElementById('waiting-list');
+    const displayList = applyFilterSort(state.waiting);
+    if (displayList.length === 0) {
+      list.innerHTML = `<div class="px-6 py-8 text-center text-on-surface-variant">${filterPriorityOnly ? 'No priority tokens waiting.' : 'No one waiting. Queue is clear.'}</div>`;
+    } else {
+      list.innerHTML = displayList.map(t => {
+        const style = categoryStyles[t.category] || categoryStyles.General;
+        return `
+          <div class="grid grid-cols-12 gap-4 px-6 py-5 items-center border-b border-outline-variant hover:bg-surface-container-low transition-colors ${style.row}">
+            <div class="col-span-3 md:col-span-2"><span class="font-headline-md ${style.textColor}">${t.token_id}</span></div>
+            <div class="col-span-5 md:col-span-4 flex flex-col">
+              <span class="font-label-bold text-on-surface">${t.name}</span>
+              <span class="md:hidden inline-flex mt-1"><span class="${style.badge} text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">${t.category}</span></span>
+            </div>
+            <div class="hidden md:col-span-3 md:flex"><span class="${style.badge} px-3 py-1 rounded-full text-label-sm font-bold uppercase tracking-wide">${t.category}</span></div>
+            <div class="col-span-4 md:col-span-3 text-right flex flex-col md:flex-row md:items-center justify-end gap-1">
+              <span class="font-label-bold text-on-surface-variant">${formatWait(t.wait_seconds)}</span>
+              ${t.category !== 'General' ? '<span class="text-on-surface-variant text-[11px]">Priority</span>' : ''}
+            </div>
+          </div>`;
+      }).join('');
+    }
+  }
+
+  function completeCounter(counter) {
+    socket.emit('complete', { counter });
+  }
+
+  const serveBtn = document.getElementById('serve-next-btn');
+  if (serveBtn) {
+    serveBtn.addEventListener('click', () => {
+      socket.emit('serve_next');
+    });
+  }
+
+  socket.on('state_update', renderState);
+  socket.on('connect', () => document.getElementById('connection-status').textContent = 'System Online');
+  socket.on('disconnect', () => document.getElementById('connection-status').textContent = 'Reconnecting...');
+  socket.on('not_authorized', () => alert('Staff login required to perform this action.'));
+
+  document.getElementById('filter-btn').addEventListener('click', () => {
+    filterPriorityOnly = !filterPriorityOnly;
+    document.getElementById('filter-btn').classList.toggle('bg-primary', filterPriorityOnly);
+    document.getElementById('filter-btn').classList.toggle('text-on-primary', filterPriorityOnly);
+    if (lastState) renderState(lastState);
+  });
+
+  document.getElementById('sort-btn').addEventListener('click', () => {
+    sortByWaitDesc = !sortByWaitDesc;
+    if (lastState) renderState(lastState);
+  });
+</script>
+</body></html>

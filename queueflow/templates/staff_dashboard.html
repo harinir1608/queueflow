@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QueueFlow - Staff Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+  body { font-family: 'Inter', sans-serif; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align: middle; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: #c3c6d6; border-radius: 10px; }
+</style>
+<script id="tailwind-config">
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "secondary-fixed-dim": "#ffb3b1", "outline-variant": "#c3c6d6",
+          "tertiary-container": "#29664b", "on-surface": "#041b3c",
+          "secondary-container": "#db313f", "primary-container": "#0052cc",
+          "tertiary": "#084e35", "outline": "#737685", "on-background": "#041b3c",
+          "on-tertiary": "#ffffff", "on-secondary": "#ffffff", "error": "#ba1a1a",
+          "background": "#f9f9ff", "primary": "#003d9b", "surface-container": "#e8edff",
+          "on-tertiary-container": "#a2e1bf", "surface-container-low": "#f1f3ff",
+          "surface-container-lowest": "#ffffff", "on-primary": "#ffffff",
+          "error-container": "#ffdad6", "on-primary-container": "#c4d2ff",
+          "tertiary-fixed": "#b1f0ce", "surface-container-high": "#e0e8ff",
+          "surface": "#f9f9ff", "secondary": "#b7102a", "on-error": "#ffffff",
+          "on-surface-variant": "#434654", "on-secondary-fixed-variant": "#92001c",
+        },
+      },
+    },
+  };
+</script>
+</head>
+<body class="bg-background text-on-surface min-h-screen pb-24">
+
+<header class="bg-surface w-full top-0 sticky border-b border-outline-variant flex items-center justify-between px-5 md:px-10 h-16 z-40">
+  <div class="flex items-center gap-3">
+    <span class="material-symbols-outlined text-primary text-2xl">confirmation_number</span>
+    <h1 class="text-xl font-semibold text-primary tracking-tight">QueueFlow</h1>
+  </div>
+  <div class="flex items-center gap-6">
+    <div class="hidden md:flex items-center gap-2 text-on-surface-variant font-bold">
+      <span class="material-symbols-outlined">schedule</span>
+      <span id="current-time">--:--</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-secondary-fixed-dim flex items-center justify-center text-on-secondary-fixed-variant font-bold text-sm">
+        {{ staff_name[:2].upper() }}
+      </div>
+      <span class="hidden sm:inline text-on-surface font-bold text-sm">Counter {{ staff_counter }} &bull; {{ staff_name }}</span>
+    </div>
+    <a href="/staff/logout" class="text-sm text-primary underline">Logout</a>
+  </div>
+</header>
+
+<main class="max-w-[1440px] mx-auto px-5 md:px-10 py-6">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+  <!-- Main Control Panel -->
+  <div class="lg:col-span-8 space-y-6 order-1">
+
+    <section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-md">
+      <div class="flex justify-between items-start mb-6">
+        <div>
+          <span class="text-xs font-bold text-primary uppercase tracking-widest">Currently Serving</span>
+          <h2 class="text-3xl font-bold mt-1">Counter {{ '%02d' % staff_counter }}</h2>
+        </div>
+        <div class="bg-tertiary-fixed text-tertiary px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1" id="online-badge">
+          <span class="w-2 h-2 rounded-full bg-tertiary"></span> Online
+        </div>
+      </div>
+
+      <div class="flex flex-col md:flex-row items-center gap-6 py-6 border-y border-outline-variant/30" id="serving-block">
+        <div class="flex-1 text-center md:text-left">
+          <div class="text-6xl font-bold text-primary leading-none tracking-tight" id="current-token">--</div>
+          <p class="text-lg text-on-surface-variant mt-2">Token Category: <span class="font-bold text-secondary" id="current-category">--</span></p>
+          <p class="text-xs text-outline mt-1" id="current-wait">Waiting Time: --</p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <button id="hold-btn" class="flex-1 md:w-40 h-14 bg-surface-container-high hover:bg-surface-container-low transition-colors rounded-lg flex items-center justify-center gap-2 font-bold border border-outline-variant active:scale-95">
+            <span class="material-symbols-outlined">pause</span> Hold
+          </button>
+          <button id="served-btn" class="flex-1 md:w-40 h-14 bg-secondary text-white hover:brightness-110 transition-all rounded-lg flex items-center justify-center gap-2 font-bold active:scale-95">
+            <span class="material-symbols-outlined">check_circle</span> Served
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-6">
+        <button id="serve-next-btn" class="w-full h-16 bg-primary text-white rounded-lg text-xl font-bold flex items-center justify-center gap-4 hover:bg-primary-container transition-all active:scale-[0.98] shadow-lg shadow-primary/20">
+          <span class="material-symbols-outlined text-3xl">arrow_forward</span> Serve Next
+        </button>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xs font-bold text-on-surface-variant uppercase">Efficiency Metrics</h3>
+          <span class="material-symbols-outlined text-outline">trending_up</span>
+        </div>
+        <div class="space-y-4">
+          <div class="flex justify-between items-end">
+            <span class="text-base">Tokens Today</span>
+            <span class="text-2xl font-bold" id="tokens-today">0</span>
+          </div>
+          <div class="w-full bg-outline-variant h-1 rounded-full overflow-hidden">
+            <div class="bg-primary h-full" id="tokens-today-bar" style="width: 0%"></div>
+          </div>
+          <p class="text-xs text-outline" id="avg-service-time">Avg service time: --</p>
+        </div>
+      </div>
+      <div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xs font-bold text-on-surface-variant uppercase">Next in Line</h3>
+          <span class="material-symbols-outlined text-outline">upcoming</span>
+        </div>
+        <div class="flex items-center gap-4" id="next-in-line">
+          <div class="w-12 h-12 bg-primary-container text-white rounded-lg flex items-center justify-center font-bold text-sm" id="next-token-badge">--</div>
+          <div>
+            <p class="font-bold text-sm" id="next-token-category">No one waiting</p>
+            <p class="text-xs text-outline" id="next-token-wait"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Pending Queue Sidebar -- stacks BELOW main content on mobile via DOM order + col-span -->
+  <aside class="lg:col-span-4 order-2">
+    <div class="bg-surface border border-outline-variant rounded-xl flex flex-col h-full max-h-[80vh] lg:max-h-[calc(100vh-8rem)]">
+      <div class="p-4 border-b border-outline-variant bg-surface-container flex items-center justify-between">
+        <h2 class="text-lg font-bold flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary">format_list_numbered</span> Pending Queue
+        </h2>
+        <span class="bg-primary text-white px-2 py-0.5 rounded text-xs font-bold" id="pending-count">0</span>
+      </div>
+      <div class="overflow-y-auto flex-1 p-4 space-y-2" id="pending-list" style="min-height: 200px;">
+        <div class="text-center text-on-surface-variant py-8">No one waiting.</div>
+      </div>
+      <div class="p-4 border-t border-outline-variant bg-surface-container-low">
+        <a href="/queue" class="w-full block text-center text-primary font-bold hover:underline">View Full Queue History</a>
+      </div>
+    </div>
+  </aside>
+
+</div>
+</main>
+
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 bg-surface border-t border-outline-variant px-4 pb-2 shadow-md">
+  <a class="flex flex-col items-center justify-center text-on-surface-variant" href="/">
+    <span class="material-symbols-outlined">add_circle</span>
+    <span class="text-xs">Get Token</span>
+  </a>
+  <a class="flex flex-col items-center justify-center text-on-surface-variant" href="/queue">
+    <span class="material-symbols-outlined">format_list_numbered</span>
+    <span class="text-xs">Queue</span>
+  </a>
+  <a class="flex flex-col items-center justify-center text-on-surface-variant" href="/staff/logout">
+    <span class="material-symbols-outlined">group</span>
+    <span class="text-xs">Staff</span>
+  </a>
+  <a class="flex flex-col items-center justify-center bg-secondary-container text-white rounded-full px-4 py-1 scale-110" href="/staff">
+    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+    <span class="text-xs font-bold">Admin</span>
+  </a>
+</nav>
+
+<script>
+  const socket = io();
+  const STAFF_COUNTER = {{ staff_counter }};
+  let onHold = false;
+
+  const categoryDot = { Emergency: 'border-l-secondary', Senior: 'border-l-tertiary-container', General: 'border-l-primary' };
+  const categoryBg  = { Emergency: 'bg-error-container/20', Senior: 'bg-tertiary-fixed/20', General: 'bg-surface-container-low' };
+  const categoryTxt = { Emergency: 'text-secondary', Senior: 'text-tertiary', General: 'text-primary' };
+
+  function formatWait(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+  }
+
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('current-time').textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  function renderState(state) {
+    // My counter (Currently Serving block)
+    const myCounter = state.counters.find(c => c.counter === STAFF_COUNTER);
+    if (myCounter && myCounter.token_id) {
+      document.getElementById('current-token').textContent = myCounter.token_id;
+      document.getElementById('current-category').textContent = myCounter.info ? myCounter.info.category : '--';
+      const calledAt = myCounter.info && myCounter.info.called_at;
+      document.getElementById('current-wait').textContent = 'Serving now';
+      document.getElementById('serve-next-btn').disabled = true;
+      document.getElementById('serve-next-btn').classList.add('opacity-50');
+    } else {
+      document.getElementById('current-token').textContent = '--';
+      document.getElementById('current-category').textContent = '--';
+      document.getElementById('current-wait').textContent = 'No token being served';
+      document.getElementById('serve-next-btn').disabled = onHold;
+      document.getElementById('serve-next-btn').classList.toggle('opacity-50', onHold);
+    }
+
+    // Efficiency metrics
+    document.getElementById('tokens-today').textContent = state.tokens_served_today;
+    const pct = Math.min(100, (state.tokens_served_today / 50) * 100);
+    document.getElementById('tokens-today-bar').style.width = pct + '%';
+    document.getElementById('avg-service-time').textContent =
+      state.avg_service_seconds != null ? `Avg service time: ${formatWait(state.avg_service_seconds)}` : 'Avg service time: --';
+
+    // Next in line
+    if (state.waiting.length > 0) {
+      const next = state.waiting[0];
+      document.getElementById('next-token-badge').textContent = next.token_id;
+      document.getElementById('next-token-category').textContent = next.category + ' Queue';
+      document.getElementById('next-token-wait').textContent = `Waiting: ${formatWait(next.wait_seconds)}`;
+    } else {
+      document.getElementById('next-token-badge').textContent = '--';
+      document.getElementById('next-token-category').textContent = 'No one waiting';
+      document.getElementById('next-token-wait').textContent = '';
+    }
+
+    // Pending queue sidebar
+    document.getElementById('pending-count').textContent = state.waiting_count;
+    const list = document.getElementById('pending-list');
+    if (state.waiting.length === 0) {
+      list.innerHTML = `<div class="text-center text-on-surface-variant py-8">No one waiting.</div>`;
+    } else {
+      list.innerHTML = state.waiting.map(t => `
+        <div class="p-3 ${categoryBg[t.category] || categoryBg.General} border-l-4 ${categoryDot[t.category] || categoryDot.General} rounded flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="text-lg font-bold ${categoryTxt[t.category] || categoryTxt.General}">${t.token_id}</div>
+            <div>
+              <p class="text-[10px] font-bold uppercase ${categoryTxt[t.category] || categoryTxt.General}">${t.category}</p>
+              <p class="text-xs text-on-surface-variant">Wait: ${formatWait(t.wait_seconds)}</p>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
+  document.getElementById('serve-next-btn').addEventListener('click', () => {
+    socket.emit('serve_next_counter', { counter: STAFF_COUNTER });
+  });
+
+  document.getElementById('served-btn').addEventListener('click', () => {
+    socket.emit('complete', { counter: STAFF_COUNTER });
+  });
+
+  document.getElementById('hold-btn').addEventListener('click', function() {
+    onHold = !onHold;
+    this.classList.toggle('bg-primary', onHold);
+    this.classList.toggle('text-white', onHold);
+    document.getElementById('serve-next-btn').disabled = onHold;
+    document.getElementById('serve-next-btn').classList.toggle('opacity-50', onHold);
+  });
+
+  socket.on('state_update', renderState);
+  socket.on('not_authorized', () => alert('Session expired — please log in again.'));
+  socket.on('connect', () => {
+    document.getElementById('online-badge').classList.remove('bg-error-container');
+  });
+  socket.on('disconnect', () => {
+    document.getElementById('online-badge').classList.add('bg-error-container');
+  });
+</script>
+</body></html>

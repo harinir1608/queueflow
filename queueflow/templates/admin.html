@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QueueFlow - Admin Analytics</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+  body { font-family: 'Inter', sans-serif; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+</style>
+<script id="tailwind-config">
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "surface-dim": "#cadaff", "primary-container": "#0052cc", "on-secondary": "#ffffff",
+          "secondary": "#b7102a", "primary": "#003d9b", "on-error": "#ffffff",
+          "tertiary-container": "#29664b", "background": "#f9f9ff", "tertiary": "#084e35",
+          "surface-container-lowest": "#ffffff", "error": "#ba1a1a", "surface-bright": "#f9f9ff",
+          "on-primary": "#ffffff", "surface": "#f9f9ff", "on-tertiary": "#ffffff",
+          "on-surface-variant": "#434654", "error-container": "#ffdad6", "outline": "#737685",
+          "surface-container": "#e8edff", "on-surface": "#041b3c", "surface-container-high": "#e0e8ff",
+          "surface-container-low": "#f1f3ff", "outline-variant": "#c3c6d6",
+          "tertiary-fixed": "#b1f0ce", "primary-fixed": "#dae2ff",
+        },
+      },
+    },
+  };
+</script>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-32">
+
+<header class="w-full top-0 sticky bg-surface border-b border-outline-variant z-50 flex items-center justify-between px-5 md:px-10 h-16">
+  <div class="flex items-center gap-2">
+    <span class="material-symbols-outlined text-primary text-2xl">confirmation_number</span>
+    <h1 class="text-xl font-semibold text-primary tracking-tight">QueueFlow</h1>
+  </div>
+  <div class="flex items-center gap-4">
+    <nav class="hidden md:flex items-center gap-6 mr-6">
+      <a class="text-on-surface-variant font-bold hover:text-primary" href="/">Get Token</a>
+      <a class="text-on-surface-variant font-bold hover:text-primary" href="/queue">Queue</a>
+      <a class="text-on-surface-variant font-bold hover:text-primary" href="/staff">Staff Dashboard</a>
+      <a class="text-primary font-bold" href="/admin">Admin</a>
+    </nav>
+    <a href="/staff/logout" class="text-sm text-primary underline">Logout</a>
+  </div>
+</header>
+
+<main class="max-w-[1440px] mx-auto px-5 md:px-10 py-6 space-y-12">
+
+  <section class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div>
+      <p class="text-primary font-bold uppercase tracking-widest mb-2 text-xs">Analytics Overview</p>
+      <h2 class="text-3xl font-bold">System Performance</h2>
+    </div>
+    <div class="flex items-center gap-2 bg-surface-container-low p-2 rounded-lg border border-outline-variant">
+      <span class="material-symbols-outlined text-on-surface-variant">calendar_today</span>
+      <span id="today-date">--</span>
+    </div>
+  </section>
+
+  <!-- KPI Cards -->
+  <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-surface border border-outline-variant rounded-xl p-6 hover:shadow-lg transition-shadow">
+      <div class="flex items-center justify-between mb-4">
+        <span class="font-bold text-on-surface-variant">Total Served Today</span>
+        <span class="material-symbols-outlined text-primary bg-primary-fixed p-2 rounded-lg">group</span>
+      </div>
+      <h3 class="text-5xl font-bold text-primary" id="kpi-served">0</h3>
+    </div>
+
+    <div class="bg-surface border border-outline-variant rounded-xl p-6 hover:shadow-lg transition-shadow">
+      <div class="flex items-center justify-between mb-4">
+        <span class="font-bold text-on-surface-variant">Average Wait Time</span>
+        <span class="material-symbols-outlined text-secondary bg-error-container p-2 rounded-lg">timer</span>
+      </div>
+      <h3 class="text-5xl font-bold" id="kpi-wait">--</h3>
+    </div>
+
+    <div class="bg-surface border border-outline-variant rounded-xl p-6 hover:shadow-lg transition-shadow">
+      <div class="flex items-center justify-between mb-4">
+        <span class="font-bold text-on-surface-variant">Active Counters</span>
+        <span class="material-symbols-outlined text-tertiary bg-tertiary-fixed p-2 rounded-lg">bolt</span>
+      </div>
+      <h3 class="text-3xl font-bold" id="kpi-counters">0 / 0</h3>
+      <p class="text-on-surface-variant" id="kpi-counters-sub">currently busy</p>
+    </div>
+  </section>
+
+  <!-- Charts Row -->
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-surface border border-outline-variant rounded-xl p-6 overflow-hidden">
+      <div class="flex items-center justify-between mb-8">
+        <h4 class="text-xl font-bold">Live Queue Length Trend</h4>
+        <span class="material-symbols-outlined text-on-surface-variant">show_chart</span>
+      </div>
+      <div class="h-48 relative">
+        <svg id="trend-svg" class="w-full h-full" viewBox="0 0 400 150" preserveAspectRatio="none">
+          <polyline id="trend-line" fill="none" stroke="#003d9b" stroke-width="3" stroke-linecap="round" points=""/>
+        </svg>
+      </div>
+      <p class="text-xs text-outline mt-2">Updates live as tokens are added/served. Resets on page reload.</p>
+    </div>
+
+    <div class="bg-surface border border-outline-variant rounded-xl p-6">
+      <div class="flex items-center justify-between mb-8">
+        <h4 class="text-xl font-bold">Queue Distribution (All-Time)</h4>
+        <span class="material-symbols-outlined text-on-surface-variant">pie_chart</span>
+      </div>
+      <div class="space-y-6" id="distribution-bars">
+        <!-- injected by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Counter Performance Table -->
+  <section class="bg-surface border border-outline-variant rounded-xl overflow-hidden">
+    <div class="p-6 border-b border-outline-variant bg-surface-container-low flex items-center justify-between">
+      <h4 class="text-xl font-bold">Counter Performance</h4>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-surface-container-lowest border-b border-outline-variant">
+            <th class="p-4 font-bold text-on-surface-variant uppercase text-xs tracking-wider">Counter</th>
+            <th class="p-4 font-bold text-on-surface-variant uppercase text-xs tracking-wider">Currently Serving</th>
+            <th class="p-4 font-bold text-on-surface-variant uppercase text-xs tracking-wider text-center">Tokens Handled</th>
+            <th class="p-4 font-bold text-on-surface-variant uppercase text-xs tracking-wider text-right">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant" id="counter-table-body">
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 bg-surface border-t border-outline-variant px-4 pb-2 shadow-md md:hidden">
+  <a class="flex flex-col items-center justify-center text-on-surface-variant" href="/">
+    <span class="material-symbols-outlined">add_circle</span>
+    <span class="text-xs">Get Token</span>
+  </a>
+  <a class="flex flex-col items-center justify-center text-on-surface-variant" href="/queue">
+    <span class="material-symbols-outlined">format_list_numbered</span>
+    <span class="text-xs">Queue</span>
+  </a>
+  <a class="flex flex-col items-center justify-center text-on-surface-variant" href="/staff">
+    <span class="material-symbols-outlined">group</span>
+    <span class="text-xs">Staff</span>
+  </a>
+  <a class="flex flex-col items-center justify-center bg-secondary text-white rounded-full px-4 py-1 scale-110" href="/admin">
+    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+    <span class="text-xs font-bold">Admin</span>
+  </a>
+</nav>
+
+<script>
+  const socket = io();
+  const trendData = [];
+  const MAX_TREND_POINTS = 40;
+
+  document.getElementById('today-date').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+
+  function formatWait(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}m ${s}s`;
+  }
+
+  const catColors = { Emergency: 'bg-secondary', Senior: 'bg-tertiary', General: 'bg-primary' };
+
+  function renderState(state) {
+    document.getElementById('kpi-served').textContent = state.tokens_served_today;
+    document.getElementById('kpi-wait').textContent = state.avg_wait_seconds != null ? formatWait(state.avg_wait_seconds) : '--';
+    document.getElementById('kpi-counters').textContent = `${state.active_counters} / ${state.total_counters}`;
+    document.getElementById('kpi-counters-sub').textContent = state.active_counters === state.total_counters ? 'all busy' : 'currently busy';
+
+    // Queue distribution
+    const dist = document.getElementById('distribution-bars');
+    const totals = state.category_totals;
+    const pcts = state.category_pct;
+    dist.innerHTML = Object.keys(totals).map(cat => `
+      <div class="space-y-2">
+        <div class="flex justify-between font-bold">
+          <span>${cat}</span>
+          <span class="text-on-surface-variant">${totals[cat]} Tokens (${pcts[cat]}%)</span>
+        </div>
+        <div class="w-full bg-surface-container-high h-4 rounded-full overflow-hidden">
+          <div class="${catColors[cat]} h-full rounded-full transition-all" style="width: ${pcts[cat]}%"></div>
+        </div>
+      </div>
+    `).join('');
+
+    // Counter performance table
+    const tbody = document.getElementById('counter-table-body');
+    tbody.innerHTML = state.counter_details.map(c => `
+      <tr class="hover:bg-surface-container-low transition-colors">
+        <td class="p-4 font-bold">Counter ${String(c.counter).padStart(2,'0')}</td>
+        <td class="p-4">${c.token_id ? `<span class="font-bold text-primary">${c.token_id}</span>` : '<span class="text-outline">--</span>'}</td>
+        <td class="p-4 text-center font-bold">${c.tokens_handled}</td>
+        <td class="p-4 text-right">
+          <span class="${c.status === 'Busy' ? 'bg-tertiary-fixed text-tertiary' : 'bg-surface-container-high text-on-surface-variant'} px-3 py-1 rounded-full text-xs font-bold uppercase">${c.status}</span>
+        </td>
+      </tr>
+    `).join('');
+
+    // Live trend line
+    trendData.push(state.waiting_count);
+    if (trendData.length > MAX_TREND_POINTS) trendData.shift();
+    const max = Math.max(5, ...trendData);
+    const points = trendData.map((v, i) => {
+      const x = (i / (MAX_TREND_POINTS - 1)) * 400;
+      const y = 150 - (v / max) * 140 - 5;
+      return `${x},${y}`;
+    }).join(' ');
+    document.getElementById('trend-line').setAttribute('points', points);
+  }
+
+  socket.on('state_update', renderState);
+  socket.on('not_authorized', () => alert('Session expired — please log in again.'));
+</script>
+</body></html>

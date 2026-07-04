@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QueueFlow - Get Token</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary": "#ffffff", "surface-bright": "#f9f9ff",
+                    "on-tertiary-fixed-variant": "#0e5138", "on-surface-variant": "#434654",
+                    "on-tertiary-container": "#a2e1bf", "primary": "#003d9b",
+                    "surface-variant": "#d7e2ff", "background": "#f9f9ff",
+                    "surface-container-highest": "#d7e2ff", "secondary-container": "#db313f",
+                    "surface-container-lowest": "#ffffff", "on-error": "#ffffff",
+                    "surface-container": "#e8edff", "surface-container-high": "#e0e8ff",
+                    "primary-container": "#0052cc", "inverse-primary": "#b2c5ff",
+                    "error-container": "#ffdad6", "surface-container-low": "#f1f3ff",
+                    "primary-fixed-dim": "#b2c5ff", "primary-fixed": "#dae2ff",
+                    "tertiary": "#084e35", "tertiary-fixed-dim": "#95d4b3",
+                    "on-secondary-fixed-variant": "#92001c", "inverse-surface": "#1d3052",
+                    "error": "#ba1a1a", "on-primary-fixed": "#001848",
+                    "secondary-fixed-dim": "#ffb3b1", "on-background": "#041b3c",
+                    "outline": "#737685", "outline-variant": "#c3c6d6",
+                    "on-primary-fixed-variant": "#0040a2", "secondary": "#b7102a",
+                    "tertiary-container": "#29664b", "surface": "#f9f9ff",
+                    "on-primary-container": "#c4d2ff", "surface-tint": "#0c56d0",
+                    "on-surface": "#041b3c", "on-error-container": "#93000a",
+                    "on-secondary-container": "#fffbff", "inverse-on-surface": "#edf0ff",
+                    "tertiary-fixed": "#b1f0ce", "on-secondary-fixed": "#410007",
+                    "surface-dim": "#cadaff", "on-tertiary": "#ffffff",
+                    "on-secondary": "#ffffff", "secondary-fixed": "#ffdad8",
+                    "on-tertiary-fixed": "#002114"
+            },
+            "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+            "spacing": {
+                    "unit": "8px", "stack-md": "16px", "container-padding-mobile": "20px",
+                    "container-padding-desktop": "40px", "gutter": "24px", "stack-sm": "8px",
+                    "stack-lg": "32px", "section-gap": "64px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"], "headline-md": ["Inter"], "headline-lg": ["Inter"],
+                    "body-md": ["Inter"], "headline-lg-mobile": ["Inter"], "display-lg": ["Inter"],
+                    "label-bold": ["Inter"], "display-md": ["Inter"], "label-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "display-lg": ["120px", {"lineHeight": "120px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-bold": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "display-md": ["72px", {"lineHeight": "80px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .category-card.active { border-color: #003d9b; background-color: #e8edff; box-shadow: 0 4px 12px rgba(0, 61, 155, 0.1); }
+        .category-card.active-emergency { border-color: #b7102a; background-color: #ffdad6; box-shadow: 0 4px 12px rgba(183, 16, 42, 0.1); }
+        input:focus { outline: none; border-color: #003d9b; }
+        #token-result { display: none; }
+    </style>
+<style> body { min-height: max(884px, 100dvh); } </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col">
+<header class="w-full top-0 sticky z-40 bg-surface dark:bg-on-background border-b border-outline-variant dark:border-outline flex items-center justify-between px-container-padding-mobile md:px-container-padding-desktop h-16">
+<div class="flex items-center gap-3 cursor-pointer active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed text-3xl">confirmation_number</span>
+<h1 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed tracking-tight">QueueFlow</h1>
+</div>
+<div class="hidden md:flex items-center gap-stack-lg">
+<nav class="flex gap-stack-md">
+<a class="text-primary font-bold font-label-bold text-label-bold px-3 py-2 hover:bg-surface-container-low transition-colors rounded-lg" href="/">Get Token</a>
+<a class="text-on-surface-variant font-label-bold text-label-bold px-3 py-2 hover:bg-surface-container-low transition-colors rounded-lg" href="/queue">Queue</a>
+</nav>
+<a href="/staff" class="flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-lg font-label-bold text-label-bold hover:brightness-110 transition-all">
+                Staff Login
+            </a>
+</div>
+</header>
+<main class="flex-grow flex flex-col items-center justify-center px-container-padding-mobile md:px-container-padding-desktop py-stack-lg">
+<div class="w-full max-w-2xl bg-surface-container-lowest rounded-xl p-stack-lg md:p-10 border border-outline-variant transition-all">
+<div class="mb-stack-lg text-center">
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-2">Welcome to Service</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Please provide your details to join the queue.</p>
+</div>
+
+<div class="mb-stack-lg p-stack-md rounded-xl bg-primary-container/10 border border-primary text-center" id="token-result">
+  <p class="font-label-bold text-label-bold text-on-surface-variant uppercase tracking-wider">Your Token</p>
+  <p class="font-headline-lg text-headline-lg text-primary" id="token-id-display">--</p>
+  <p class="font-body-md text-on-surface-variant" id="token-category-display"></p>
+</div>
+
+<form class="space-y-stack-lg" id="token-form">
+<div class="space-y-2">
+<label class="font-label-bold text-label-bold text-on-surface-variant block uppercase tracking-wider" for="user-name">Full Name</label>
+<input class="w-full h-14 px-4 rounded-lg border-2 border-outline-variant bg-surface focus:ring-0 transition-all font-body-lg text-body-lg placeholder:text-outline" id="user-name" placeholder="Enter your name" required="" type="text"/>
+</div>
+<div class="space-y-4">
+<label class="font-label-bold text-label-bold text-on-surface-variant block uppercase tracking-wider">Select Category</label>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-stack-md">
+<div class="category-card group cursor-pointer border-2 border-outline-variant rounded-xl p-4 flex flex-col items-center text-center hover:bg-surface-container-low transition-all active:scale-95" onclick="selectCategory(this, 'general')">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-3 group-hover:bg-primary-container group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined">person</span>
+</div>
+<span class="font-label-bold text-label-bold block mb-1">General</span>
+<span class="text-[11px] leading-tight text-on-surface-variant">Standard inquiry &amp; general services</span>
+</div>
+<div class="category-card group cursor-pointer border-2 border-outline-variant rounded-xl p-4 flex flex-col items-center text-center hover:bg-surface-container-low transition-all active:scale-95" onclick="selectCategory(this, 'senior')">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-3 group-hover:bg-primary-container group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined">elderly</span>
+</div>
+<span class="font-label-bold text-label-bold block mb-1">Senior</span>
+<span class="text-[11px] leading-tight text-on-surface-variant">Priority service for elderly &amp; disabled</span>
+</div>
+<div class="category-card group cursor-pointer border-2 border-outline-variant border-l-4 border-l-secondary rounded-xl p-4 flex flex-col items-center text-center hover:bg-error-container/20 transition-all active:scale-95" onclick="selectCategory(this, 'emergency')">
+<div class="w-12 h-12 rounded-full bg-error-container/30 text-secondary flex items-center justify-center mb-3 group-hover:bg-secondary group-hover:text-on-secondary transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<span class="font-label-bold text-label-bold block text-secondary mb-1">Emergency</span>
+<span class="text-[11px] leading-tight text-on-surface-variant">Critical &amp; time-sensitive matters</span>
+</div>
+</div>
+<input id="selected-category" required="" type="hidden" value=""/>
+</div>
+<div class="pt-4">
+<button class="w-full h-16 bg-primary text-on-primary rounded-xl font-headline-md text-headline-md hover:shadow-lg hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-3" type="submit">
+                        Get Token
+                        <span class="material-symbols-outlined text-3xl">arrow_forward</span>
+</button>
+<p class="text-center mt-stack-md font-label-sm text-label-sm text-outline">
+                        Waiting tokens ahead: <span class="font-bold text-on-surface" id="waiting-count">0</span>
+</p>
+</div>
+</form>
+</div>
+</main>
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 bg-surface dark:bg-on-background px-4 pb-2 border-t border-outline-variant dark:border-outline shadow-md">
+<a class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary rounded-full px-4 py-1 scale-110 transition-transform duration-200" href="/">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="font-label-sm text-label-sm">Get Token</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed transition-colors" href="/queue">
+<span class="material-symbols-outlined">format_list_numbered</span>
+<span class="font-label-sm text-label-sm">Queue</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed transition-colors" href="/staff">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-sm text-label-sm">Staff</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed transition-colors" href="/staff">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-sm text-label-sm">Admin</span>
+</a>
+</nav>
+<script>
+        const socket = io();
+
+        function selectCategory(element, category) {
+            document.querySelectorAll('.category-card').forEach(card => {
+                card.classList.remove('active', 'active-emergency');
+            });
+            element.classList.add(category === 'emergency' ? 'active-emergency' : 'active');
+            document.getElementById('selected-category').value = category;
+        }
+
+        document.getElementById('token-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const category = document.getElementById('selected-category').value;
+            const name = document.getElementById('user-name').value;
+
+            if(!category) {
+                alert('Please select a service category');
+                return;
+            }
+
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Processing...';
+            btn.disabled = true;
+
+            socket.emit('add_token', { name, category });
+
+            socket.once('token_created', (data) => {
+                document.getElementById('token-id-display').textContent = data.token_id;
+                document.getElementById('token-category-display').textContent = 'Category: ' + data.category.toUpperCase();
+                document.getElementById('token-result').style.display = 'block';
+
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+                e.target.reset();
+                document.querySelectorAll('.category-card').forEach(card => card.classList.remove('active', 'active-emergency'));
+            });
+        });
+
+        socket.on('state_update', (state) => {
+            document.getElementById('waiting-count').textContent = state.waiting_count;
+        });
+    </script>
+</body></html>

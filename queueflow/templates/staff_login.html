@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QueueFlow - Staff Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+  body { font-family: 'Inter', sans-serif; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+</style>
+<script id="tailwind-config">
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          primary: "#003d9b", background: "#f9f9ff", "on-surface": "#041b3c",
+          "on-surface-variant": "#434654", "outline-variant": "#c3c6d6",
+          "surface-container-lowest": "#ffffff", error: "#ba1a1a", "error-container": "#ffdad6",
+          "surface-container-low": "#f1f3ff", "secondary-container": "#db313f",
+        },
+      },
+    },
+  };
+</script>
+</head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col pb-24">
+  <header class="w-full top-0 sticky z-40 bg-surface border-b border-outline-variant flex items-center justify-between px-5 md:px-10 h-16">
+    <div class="flex items-center gap-3">
+      <span class="material-symbols-outlined text-primary text-3xl">confirmation_number</span>
+      <h1 class="text-2xl font-semibold text-primary tracking-tight">QueueFlow</h1>
+    </div>
+    <nav class="hidden md:flex items-center gap-4">
+      <a class="text-on-surface-variant font-bold px-3 py-2 rounded-lg hover:bg-surface-container-low" href="/">Get Token</a>
+      <a class="text-on-surface-variant font-bold px-3 py-2 rounded-lg hover:bg-surface-container-low" href="/queue">Queue</a>
+      <a class="text-primary font-bold px-3 py-2 rounded-lg" href="/staff">Staff Login</a>
+    </nav>
+  </header>
+
+  <main class="flex-grow flex items-center justify-center px-4 py-8">
+  <div class="w-full max-w-md bg-surface-container-lowest rounded-xl p-8 border border-outline-variant shadow-md">
+    <div class="text-center mb-8">
+      <span class="material-symbols-outlined text-primary text-4xl">admin_panel_settings</span>
+      <h1 class="text-2xl font-semibold text-primary mt-2">Staff Login</h1>
+      <p class="text-on-surface-variant mt-1">Enter the staff password to access queue controls.</p>
+    </div>
+
+    {% if error %}
+    <div class="mb-4 p-3 rounded-lg bg-error-container text-error text-sm text-center">
+      {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" class="space-y-4">
+      <input
+        type="text"
+        name="staff_name"
+        placeholder="Your name (e.g. John Doe)"
+        class="w-full h-12 px-4 rounded-lg border-2 border-outline-variant focus:outline-none focus:border-primary"
+      />
+      <input
+        type="password"
+        name="password"
+        placeholder="Staff password"
+        required
+        autofocus
+        class="w-full h-12 px-4 rounded-lg border-2 border-outline-variant focus:outline-none focus:border-primary"
+      />
+      <button type="submit" class="w-full h-12 bg-primary text-white rounded-lg font-semibold hover:brightness-110 transition-all">
+        Log In
+      </button>
+    </form>
+
+    <p class="text-center mt-6 text-sm text-on-surface-variant">
+      <a href="/queue" class="text-primary underline">View public queue instead</a>
+    </p>
+  </div>
+  </main>
+
+  <nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 bg-surface border-t border-outline-variant px-4 pb-2 shadow-md">
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors" href="/">
+      <span class="material-symbols-outlined mb-1">add_circle</span>
+      <span class="text-xs">Get Token</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors" href="/queue">
+      <span class="material-symbols-outlined mb-1">format_list_numbered</span>
+      <span class="text-xs">Queue</span>
+    </a>
+    <a class="flex flex-col items-center justify-center bg-secondary-container text-white rounded-full px-4 py-1 scale-110 transition-transform" href="/staff">
+      <span class="material-symbols-outlined mb-0.5" style="font-variation-settings: 'FILL' 1;">group</span>
+      <span class="text-xs font-bold">Staff</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors" href="/staff">
+      <span class="material-symbols-outlined mb-1">analytics</span>
+      <span class="text-xs">Admin</span>
+    </a>
+  </nav>
+</body>
+</html>
